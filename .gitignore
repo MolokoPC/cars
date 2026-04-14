@@ -1,0 +1,17 @@
+# Секреты
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+.vscode/
+.idea/
+
+
+
+learn.py
+database.db
+learn_db.db
