@@ -1,4 +1,26 @@
 from tortoise import models, fields
+from enum import IntEnum
+
+
+class CarRarity(IntEnum):
+    COMMON = 1       # Обычный
+    RARE = 2         # Редкий
+    SUPER_RARE = 3   # Сверхредкий
+    EPIC = 4         # Эпический
+    MYTHIC = 5       # Мифический
+    LEGENDARY = 6    # Легендарный
+
+    @classmethod
+    def get_name(cls, value: int) -> str:
+        mapping = {
+            cls.COMMON: "Обычный",
+            cls.RARE: "Редкий",
+            cls.SUPER_RARE: "Сверхредкий",
+            cls.EPIC: "Эпический",
+            cls.MYTHIC: "Мифический",
+            cls.LEGENDARY: "Легендарный",
+        }
+        return mapping.get(value, "Неизвестно")
 
 
 class User(models.Model):
@@ -18,6 +40,7 @@ class Car(models.Model):
     id = fields.IntField(pk=True)
     brand = fields.CharField(max_length=200)
     # добавить редкость ну кароче ты понял сделай все круто
+    rarity = fields.IntEnumField(CarRarity, default=CarRarity.COMMON)
 
     def __str__(self):
         return f"<CAR: {self.id}|{self.brand}>"

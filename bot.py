@@ -7,7 +7,8 @@ from aiogram.filters.command import Command
 from dotenv import load_dotenv
 from tortoise import Tortoise
 
-from database import init, AddUser, UserExist, GTopUsers, GetUser
+from database import init, AddUser, UserExist, GTopUsers, GetUser, GetCars, GetCarsRarity
+from models import CarRarity
 
 
 # Загружаем переменные из .env
@@ -100,8 +101,26 @@ async def command_start_handler(message: types.Message):
         return
     
     user = await GetUser(id)
-    Profile_text = Profile_text_template.format(user.fullname, user.cars_count, 1, user.lvl, 2,3,4,5,6,7,8,9,10,11,12,13, user.pts)
+    cars_rarity = await GetCarsRarity()
+    common = cars_rarity[0]["count"]
+    rare = cars_rarity[1]["count"]
+    super_rare = cars_rarity[2]["count"]
+    epic = cars_rarity[3]["count"]
+    mythic = cars_rarity[4]["count"]
+    legendary = cars_rarity[5]["count"]
 
+    Profile_text = Profile_text_template.format(
+        user.fullname, 
+        user.cars_count, 
+        common+rare+super_rare+epic+mythic+legendary, 
+        user.lvl, 
+        2, common, 
+        4, rare, 6, 
+        super_rare, 8, 
+        epic, 10, mythic, 
+        12, legendary, 
+        user.pts
+    )
     await message.answer(Profile_text)
 
 
