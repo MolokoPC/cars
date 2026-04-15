@@ -48,7 +48,7 @@ class Car(models.Model):
 
 class UserCar(models.Model):
     id = fields.IntField(pk=True)
-    count = fields.IntField(default=1)
+    car_count = fields.IntField(default=1)
     user = fields.ForeignKeyField(
         'models.User',
         related_name='user_cars',

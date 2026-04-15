@@ -7,7 +7,7 @@ from aiogram.filters.command import Command
 from dotenv import load_dotenv
 from tortoise import Tortoise
 
-from database import init, AddUser, UserExist, GTopUsers, GetUser, GetCars, GetCarsRarity
+from database import init, AddUser, UserExist, GTopUsers, GetUser, GetCars, GetCarsRarity, GetUserCarsRarity
 from models import CarRarity
 
 
@@ -102,23 +102,26 @@ async def command_start_handler(message: types.Message):
     
     user = await GetUser(id)
     cars_rarity = await GetCarsRarity()
-    common = cars_rarity[0]["count"]
-    rare = cars_rarity[1]["count"]
-    super_rare = cars_rarity[2]["count"]
-    epic = cars_rarity[3]["count"]
-    mythic = cars_rarity[4]["count"]
-    legendary = cars_rarity[5]["count"]
+    user_cars_rarity = await GetUserCarsRarity(id)
+    # print(user_cars_rarity)
+    common = [user_cars_rarity[0]["count"], cars_rarity[0]["count"]]
+    rare = [user_cars_rarity[1]["count"] , cars_rarity[1]["count"]]
+    super_rare = [user_cars_rarity[2]["count"] , cars_rarity[2]["count"]]
+    epic = [user_cars_rarity[3]["count"] , cars_rarity[3]["count"]]
+    mythic = [user_cars_rarity[4]["count"] , cars_rarity[4]["count"]]
+    legendary = [user_cars_rarity[5]["count"] , cars_rarity[5]["count"]]
 
     Profile_text = Profile_text_template.format(
         user.fullname, 
         user.cars_count, 
-        common+rare+super_rare+epic+mythic+legendary, 
+        common[1]+rare[1]+super_rare[1]+epic[1]+mythic[1]+legendary[1], 
         user.lvl, 
-        2, common, 
-        4, rare, 6, 
-        super_rare, 8, 
-        epic, 10, mythic, 
-        12, legendary, 
+        common[0], common[1], 
+        rare[0], rare[1], 
+        super_rare[0], super_rare[1],
+        epic[0], epic[1],
+        mythic[0], mythic[1], 
+        legendary[0], legendary[1], 
         user.pts
     )
     await message.answer(Profile_text)

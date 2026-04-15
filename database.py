@@ -1,6 +1,6 @@
 import asyncio
 from tortoise import Tortoise
-from models import User, Car, UserCar
+from models import User, Car, UserCar, CarRarity
 from tortoise.functions import Count
 # from models import User
 # from tortoise.connection import connections
@@ -38,11 +38,9 @@ async def GTopUsers():
     users = await User.all().order_by("-lvl").limit(10)
     return users
 
-# выдача user с подрузом UserCar модели Car
-# если ты не тупой поймешь 
+# деф выдача пользователя
 async def GetUser(id):
-    user = await User.get_or_none(id=id).prefetch_related("user_cars__car")
-    print(user, user.fullname)
+    user = await User.get_or_none(id=id)
     return user
 
 
@@ -54,4 +52,16 @@ async def GetCars():
 # выдает список с словарями такого формата {"rarity": <CarRarity....>, "count": count}
 async def GetCarsRarity():
     cars_rarity = await Car.annotate(count=Count("id")).group_by("rarity").values("rarity", "count")
+    return cars_rarity
+
+async def GetUserCarsRarity(id):
+    cars_rarity_raw = await UserCar.filter(user_id=id).annotate(count=Count("id")).group_by("car__rarity").values("car__rarity", "count")
+    cars_rarity_raw = {res["rarity"]: res["count"] for res in cars_rarity_raw}
+    
+    cars_rarity = []
+    for rarity in CarRarity:
+        cars_rarity.append({
+            "rarity": rarity,
+            "count": cars_rarity_raw.get(rarity.value, 0)
+        })
     return cars_rarity
