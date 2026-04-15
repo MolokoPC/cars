@@ -30,11 +30,11 @@ help_text = """
 /shop - 
 """
 
-GTop_text = """
+GTop_text_template = """
 Глобальный топ:
 """ 
 
-Profile_text = """
+Profile_text_template = """
 {}
 ··············
 {} из {} машин
@@ -95,12 +95,12 @@ async def command_start_handler(message: types.Message):
     global Profile_text
     id = message.from_user.id
     # fullname = message.from_user.full_name
-    if not UserExist(id):
+    if not await UserExist(id):
         await message.answer(f"Вы не в игре.\nПропишите /start чтобы войти в игру")
         return
     
     user = await GetUser(id)
-    Profile_text.format(user.fullname, user.cars_count, 1, user.lvl, 2,3,4,5,6,7,8,9,10,11,12,13, user.pts)
+    Profile_text = Profile_text_template.format(user.fullname, user.cars_count, 1, user.lvl, 2,3,4,5,6,7,8,9,10,11,12,13, user.pts)
 
     await message.answer(Profile_text)
 

@@ -6,7 +6,7 @@ class User(models.Model):
     chat_id = fields.BigIntField()
     username = fields.CharField(max_length=100)
     fullname = fields.CharField(max_length=100)
-    cars_count = fields.IntField()
+    cars_count = fields.IntField(default=0)
     pts = fields.DecimalField(decimal_places=2, max_digits=12, default=0.0)
     lvl = fields.IntField(default=1)
 

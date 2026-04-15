@@ -16,7 +16,7 @@ async def init():
 
 async def UserExist(id):
     exist = await User.filter(id=id).exists()
-    # print(exist)
+    # print(1111111111111111,exist)
     return exist
 
 async def AddUser(id, username, fullname, chat_id):
@@ -33,5 +33,5 @@ async def GTopUsers():
 
 async def GetUser(id):
     user = await User.get_or_none(id=id).prefetch_related("user_cars__car")
-    print(user, user.fullname())
+    print(user, user.fullname)
     return user
