@@ -141,7 +141,9 @@ async def command_start_handler(message: types.Message):
         return
     
     car = await Car.GetRandomCar()
-    await message.answer(f"{car.brand}")
+    user_car, created = await user.AddOrAppendCar(car)
+    print(user_car)
+    await message.answer(f"{user_car.car_count} {created}")
     await User.UpdateTimeCar(user)
 
 # функция запуска бота и инита базы данных

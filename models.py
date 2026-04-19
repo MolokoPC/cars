@@ -5,6 +5,7 @@ from time import time
 # from tortoise.expressions import Function
 # from tortoise.expressions import RawSQL
 from tortoise.contrib.sqlite.functions import Random
+from tortoise.expressions import F
 
 class CarRarity(IntEnum):
     COMMON = 1       # Обычный
@@ -65,6 +66,25 @@ class User(models.Model):
     async def UpdateTimeCar(self) -> None:
         self.last_use = int(time())
         await self.save()
+
+    async def AddOrAppendCar(self, car):
+        user_car, created = await UserCar.get_or_create(
+            user=self,
+            car=car
+        )
+        if not created:
+            # Использование F-выражения защищает от Race Condition
+            user_car.car_count = F('car_count') + 1
+            await user_car.save()
+
+            # делает запрос
+            await user_car.refresh_from_db(fields=['car_count'])
+
+        self.cars_count = F('cars_count') + 1
+        await self.save()
+
+        return [user_car, created]
+
 
     # --- Методы класса (вызываются как User.method()) --- (тут чето можно изменить с userexist по getuser незн что но мне чешет руки (бомж))
 
@@ -144,7 +164,7 @@ class UserCar(models.Model):
     )
 
     def __str__(self):
-        return f"<UserCar: {self.user_id} owns {self.car_count} of {self.car_id}>"
+        return f"<UserCar object owns: {self.user_id} count: {self.car_count} car_id: {self.car_id}>"
 
     class Meta:
         # Опционально: запретить дубликаты (один и тот же юзер + та же машина)
