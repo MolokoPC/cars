@@ -7,9 +7,9 @@ from aiogram.filters.command import Command
 from dotenv import load_dotenv
 from tortoise import Tortoise
 
-from database import init, AddUser, UserExist, GTopUsers, GetUser, GetCars, GetCarsRarity, GetUserCarsRarity
-from models import CarRarity
-
+# from database import *
+from models import CarRarity, User, UserCar, Car
+from funcs import init
 
 # Загружаем переменные из .env
 load_dotenv()
@@ -68,11 +68,11 @@ async def command_start_handler(message: types.Message):
     fullname = message.from_user.full_name
     username = message.from_user.username
 
-    if await UserExist(id):
+    if await User.UserExist(id):
         await message.answer(f"Привет, {fullname}! Вы уже в игре.")
         return
     
-    await AddUser(id, username, fullname, chat_id)
+    await User.AddUser(id, username, fullname, chat_id)
     await message.answer(f"Привет, {message.from_user.full_name}! Вы добавлены в игру.")
 
 # Обработчик команды /help
@@ -85,7 +85,7 @@ async def command_start_handler(message: types.Message):
 @dp.message(Command("gtop"))
 async def command_start_handler(message: types.Message):
     global GTop_text
-    users = await GTopUsers()
+    users = await User.GTopUsers()
     for i, user in enumerate(users, 1):
         GTop_text += f"{i}) {user.fullname} {user.lvl}\n"
     await message.answer(GTop_text)
@@ -96,13 +96,13 @@ async def command_start_handler(message: types.Message):
     global Profile_text
     id = message.from_user.id
     # fullname = message.from_user.full_name
-    if not await UserExist(id):
+    if not await User.UserExist(id):
         await message.answer(f"Вы не в игре.\nПропишите /start чтобы войти в игру")
         return
     
-    user = await GetUser(id)
-    cars_rarity = await GetCarsRarity()
-    user_cars_rarity = await GetUserCarsRarity(id)
+    user = await User.GetUser(id)
+    cars_rarity = await Car.GetCarsRarity()
+    user_cars_rarity = await User.GetUserCarsRarity(user)
     # print(user_cars_rarity)
     common = [user_cars_rarity[0]["count"], cars_rarity[0]["count"]]
     rare = [user_cars_rarity[1]["count"] , cars_rarity[1]["count"]]
@@ -127,13 +127,22 @@ async def command_start_handler(message: types.Message):
     await message.answer(Profile_text)
 
 
-# @dp.message(Command("test"))
-# async def command_start_handler(message: types.Message):
-#     user = await UserInfo(1559141063)
-#     user_cars = [uc.car.brand for uc in user.user_cars]
-#     await message.answer(f"{user_cars}")
-
-
+# Обработчик команды /cars
+@dp.message(Command("cars"))
+async def command_start_handler(message: types.Message):
+    id = message.from_user.id
+    if not await User.UserExist(id):
+        await message.answer(f"Вы не в игре.\nПропишите /start чтобы войти в игру")
+        return
+    user = await User.GetUser(id)
+    time_left, ok = await User.CheckTimeCar(user)
+    if not ok:
+        await message.answer(f"Попробуйте через {divmod(time_left, 60)[0]} минут {divmod(time_left, 60)[1]} секунд")
+        return
+    
+    car = await Car.GetRandomCar()
+    await message.answer(f"{car.brand}")
+    await User.UpdateTimeCar(user)
 
 # функция запуска бота и инита базы данных
 async def main():

@@ -14,4 +14,7 @@ venv/
 
 learn.py
 database.db
+database.db-shm
+database.db-wal
+
 learn_db.db

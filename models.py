@@ -1,6 +1,10 @@
 from tortoise import models, fields
 from enum import IntEnum
-
+from tortoise.functions import Count
+from time import time
+# from tortoise.expressions import Function
+# from tortoise.expressions import RawSQL
+from tortoise.contrib.sqlite.functions import Random
 
 class CarRarity(IntEnum):
     COMMON = 1       # Обычный
@@ -31,11 +35,72 @@ class User(models.Model):
     cars_count = fields.IntField(default=0)
     pts = fields.DecimalField(decimal_places=2, max_digits=12, default=0.0)
     lvl = fields.IntField(default=1)
+    last_use = fields.BigIntField(default=0)
 
     def __str__(self):
         return f"<User: {self.id}>"
     
+    # --- Методы экземпляра (вызываются как user.method()) --- (разница просто в жопу мне чтото писть надоело о боже зачем кому я это пишу)
+    # кароче хотел сказать что разница в то что self и user(экземпляр) != User(класс)
 
+    async def GetUserCarsRarity(self):
+        cars_rarity_raw = await UserCar.filter(user_id=self.id).annotate(count=Count("id")).group_by("car__rarity").values("car__rarity", "count")
+        cars_rarity_raw = {res["rarity"]: res["count"] for res in cars_rarity_raw}
+        
+        cars_rarity = []
+        for rarity in CarRarity:
+            cars_rarity.append({
+                "rarity": rarity,
+                "count": cars_rarity_raw.get(rarity.value, 0)
+            })
+        return cars_rarity
+    
+    async def CheckTimeCar(self) -> list:
+        now = int(time())
+        cooldown = 3 #3600
+        if now > (cooldown + self.last_use):
+            return [0, True]
+        return [cooldown+self.last_use-now, False]
+
+    async def UpdateTimeCar(self) -> None:
+        self.last_use = int(time())
+        await self.save()
+
+    # --- Методы класса (вызываются как User.method()) --- (тут чето можно изменить с userexist по getuser незн что но мне чешет руки (бомж))
+
+    # проверка есть ли запись пользователя в базе 
+    # работает вроде нормально но не знаю наверное нет (тут все работает через жопу)
+    @classmethod
+    async def UserExist(cls, id):
+        exist = await cls.filter(id=id).exists()
+        return exist
+    
+    # БЛЯТЬ ПЕРЕПИШИ ПОТОМ НАХУЙ ЭТИ ДВА НА ОДНО НО GET_OR_CREATE ПЖПЖПЖПЖПЖПЖПЖПЖПЖПЖПЖПЖП
+    # добавляет нового пользователя
+    # надо переделать на create or get или как там его 
+    # для того чтобы выгладило красивее и меньше запросов 
+    # но незн 50 на 50 думать надо
+    @classmethod
+    async def AddUser(cls, id, username, fullname, chat_id):
+        user = await cls.create(id=id, username=username, fullname=fullname, chat_id=chat_id)
+        return user
+    
+    # деф выдача пользователя
+    @classmethod
+    async def GetUser(cls, id):
+        user = await cls.get_or_none(id=id)
+        return user
+    
+    # простая первая версия
+    # надо сделать с видами сортировки 
+    # возможно добавить страницы типо первые 10 вторые 10 и так далее
+    # можно вместить gtop и обыч top в одну функцию через передачу параметра и if 
+    @classmethod
+    async def GTopUsers(cls) -> list:
+        users = await cls.all().order_by("-lvl").limit(10)
+        return users
+
+    
 class Car(models.Model):
     id = fields.IntField(pk=True)
     brand = fields.CharField(max_length=200)
@@ -44,6 +109,24 @@ class Car(models.Model):
 
     def __str__(self):
         return f"<CAR: {self.id}|{self.brand}>"
+    # --- Методы класса (вызываются как Car.method()) ---
+
+    # просто выдает все машины без ничего лишнего (без подгрузки связей)
+    @classmethod
+    async def GetCars(cls):
+        cars = await cls.all()
+        return cars
+    
+    # выдает список с словарями такого формата {"rarity": <CarRarity....>, "count": count}
+    @classmethod
+    async def GetCarsRarity(cls):
+        cars_rarity = await cls.annotate(count=Count("id")).group_by("rarity").values("rarity", "count")
+        return cars_rarity
+    
+    @classmethod
+    async def GetRandomCar(cls):
+        return await cls.annotate(random=Random()).order_by("random").first()
+    
 
 
 class UserCar(models.Model):
@@ -54,7 +137,6 @@ class UserCar(models.Model):
         related_name='user_cars',
         on_delete=fields.CASCADE
     )
-
     car = fields.ForeignKeyField(
         'models.Car',
         related_name='car_users',
@@ -62,8 +144,8 @@ class UserCar(models.Model):
     )
 
     def __str__(self):
-        return f"<UserCar: {self.user_id} owns {self.count} of {self.car_id}>"
-    
+        return f"<UserCar: {self.user_id} owns {self.car_count} of {self.car_id}>"
+
     class Meta:
         # Опционально: запретить дубликаты (один и тот же юзер + та же машина)
         unique_together = (("user", "car"),)
