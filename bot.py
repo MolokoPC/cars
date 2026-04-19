@@ -4,8 +4,10 @@ import logging
 
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters.command import Command
+from aiogram.enums import ParseMode
 from dotenv import load_dotenv
 from tortoise import Tortoise
+
 
 # from database import *
 from models import CarRarity, User, UserCar, Car
@@ -37,19 +39,28 @@ GTop_text_template = """
 
 Profile_text_template = """
 {}
-··············
+`··············`
 {} из {} машин
 {} уровень
-··············
+`··············`
 Обычных: {} из {}
 Редких: {} из {}
 Сверхредких: {} из {}
 Эпических: {} из {}
 Мифических: {} из {}
 Легендарных: {} из {}
-··············
+`··············`
 {} pts
 """
+
+Cars_text_template = """
+**{}**  
+> {} машина
+{} из {} • {}\!  
+`··············`  
+_\+{} pts_
+"""
+
 
 
 # Инициализация бота и диспетчера
@@ -124,12 +135,13 @@ async def command_start_handler(message: types.Message):
         legendary[0], legendary[1], 
         user.pts
     )
-    await message.answer(Profile_text)
+    await message.answer(Profile_text, parse_mode=ParseMode.MARKDOWN_V2)
 
 
 # Обработчик команды /cars
 @dp.message(Command("cars"))
 async def command_start_handler(message: types.Message):
+    global Cars_text_template
     id = message.from_user.id
     if not await User.UserExist(id):
         await message.answer(f"Вы не в игре.\nПропишите /start чтобы войти в игру")
@@ -142,9 +154,14 @@ async def command_start_handler(message: types.Message):
     
     car = await Car.GetRandomCar()
     user_car, created = await user.AddOrAppendCar(car)
-    print(user_car)
-    await message.answer(f"{user_car.car_count} {created}")
+
+    new = "Новая" if created else "Повторка" 
+    print(new, created)
+    Cars_text = Cars_text_template.format(car.brand.replace('-', '\-'), CarRarity.get_name(car.rarity), 0, 1488, new, 69)
+    await message.answer(Cars_text, parse_mode=ParseMode.MARKDOWN_V2)
     await User.UpdateTimeCar(user)
+
+
 
 # функция запуска бота и инита базы данных
 async def main():

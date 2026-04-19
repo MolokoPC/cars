@@ -58,7 +58,7 @@ class User(models.Model):
     
     async def CheckTimeCar(self) -> list:
         now = int(time())
-        cooldown = 3 #3600
+        cooldown = 0 #3600
         if now > (cooldown + self.last_use):
             return [0, True]
         return [cooldown+self.last_use-now, False]
